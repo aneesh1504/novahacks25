@@ -134,10 +134,18 @@ def _mock_fallback() -> str:
 def extract_teacher_name(text: str, default_name: str) -> str:
     """
     Extract teacher name from text using a pattern like 'Mr. John Smith' or 'Ms. Jane Tan'.
-    Falls back to default_name if not found.
+    Matches only up to the last name and ignores trailing words like 'Instructor' or 'Department'.
     """
-    # Regex pattern for titles and names like "Mr. David Chen", "Ms. Sarah Tan", "Dr. Alex Wong"
-    match = re.search(r"\b(Mr|Ms|Mrs|Dr)\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+", text)
+    # Regex pattern:
+    # - Capture titles Mr./Ms./Mrs./Dr.
+    # - One first name (capitalized, may include hyphen or apostrophe)
+    # - Optional middle initial
+    # - One last name (capitalized, may include hyphen or apostrophe)
+    pattern = re.compile(
+        r"\b(Mr|Ms|Mrs|Dr)\.\s+[A-Z][a-zA-Z'\-]+(?:\s+[A-Z]\.)?\s+[A-Z][a-zA-Z'\-]+\b"
+    )
+
+    match = pattern.search(text)
     if match:
         return match.group(0).strip()
     return default_name
