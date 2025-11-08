@@ -1,0 +1,28 @@
+# Root ignores
+.DS_Store
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local environment files (do not commit secrets)
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Frontend (Next.js)
+liquid-glass-login/node_modules/
+liquid-glass-login/.next/
+liquid-glass-login/.turbo/
+liquid-glass-login/.env.local
+!liquid-glass-login/.env.local.example
