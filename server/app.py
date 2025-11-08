@@ -101,66 +101,59 @@ def transcribe():
 
 @app.post("/tts")
 def text_to_speech():
+    """Generate TTS audio for provided text using ElevenLabs and return as stream.
+
+    Request JSON:
+      - text: str (required)
+      - voice: str (optional)
+      - stability: float 0..1 (optional)
+      - similarity_boost: float 0..1 (optional)
+    """
     if not TTS_AVAILABLE:
         return jsonify({"error": "TTS not available"}), 500
-    
+
     data = request.get_json()
     if not data or "text" not in data:
         return jsonify({"error": "missing text field"}), 400
-    
+
     text = data["text"]
-    voice = data.get("voice", "Sarah")  # Default to Sarah voice (available in your account)
-    stability = data.get("stability", 0.5)  # Voice stability (0.0-1.0)
-    similarity_boost = data.get("similarity_boost", 0.5)  # Voice similarity (0.0-1.0)
-    
-    if not text.strip():
+    voice = data.get("voice", "Sarah")
+    stability = float(data.get("stability", 0.5))
+    similarity_boost = float(data.get("similarity_boost", 0.5))
+
+    if not str(text).strip():
         return jsonify({"error": "empty text"}), 400
-    
+
     try:
-        # Get ElevenLabs client
         client = get_tts_model()
-        
-        # Configure voice settings
         voice_settings = VoiceSettings(
             stability=stability,
             similarity_boost=similarity_boost,
             style=0.0,
-            use_speaker_boost=True
+            use_speaker_boost=True,
         )
-        
-        # Generate audio using ElevenLabs
+
         audio_generator = client.generate(
             text=text,
             voice=voice,
             voice_settings=voice_settings,
-            model="eleven_multilingual_v2"
+            model="eleven_multilingual_v2",
         )
-        
-        # Convert generator to bytes
+
+        # Join all chunks into memory and stream back
         audio_bytes = b"".join(audio_generator)
-        
-        # Create temporary file for output
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp_file:
-            output_path = tmp_file.name
-            tmp_file.write(audio_bytes)
-        
-        # Return the audio file
+        audio_io = io.BytesIO(audio_bytes)
+        audio_io.seek(0)
+
         return send_file(
-            output_path,
-            mimetype="audio/mp3",
+            audio_io,
+            mimetype="audio/mpeg",
             as_attachment=False,
-            download_name="tts.mp3"
+            download_name="tts.mp3",
         )
-    
+
     except Exception as e:
         return jsonify({"error": f"TTS generation failed: {str(e)}"}), 500
-    finally:
-        # Clean up temp file after sending
-        try:
-            if 'output_path' in locals():
-                os.unlink(output_path)
-        except:
-            pass
 
 # Serve other static files (JS, CSS, etc.)
 @app.route('/<path:path>')
