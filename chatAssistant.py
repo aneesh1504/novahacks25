@@ -124,7 +124,7 @@ If relevant, give specific teacher or student names and their traits.
                 {"role": "system", "content": system_prompt.strip()},
                 {"role": "user", "content": prompt.strip()}
             ],
-            "temperature": 0.3
+            "temperature": 0.2
         }
     )
     r.raise_for_status()
