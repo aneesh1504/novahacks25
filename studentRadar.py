@@ -30,10 +30,10 @@ def call_openrouter_api(prompt: str) -> str:
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-        print(f"[DEBUG] OpenRouter API response status: {response.status_code}")
+        print(f"[DEBUG] studentRadar OpenRouter API response status: {response.status_code}")
         response.raise_for_status()
         data = response.json()
-        print(f"[DEBUG] OpenRouter API response data: {data}")
+        print(f"[DEBUG] studentRadar OpenRouter API response data: {data}")
 
         # Extract text content
         message = data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -106,7 +106,8 @@ def process_student_data(csv_file: Any, student_interviews: Dict[str, Any] = Non
 
     df = pd.read_csv(csv_file)
     results = []
-    student_interviews = student_interviews or {}
+    # student_interviews = student_interviews or {}
+    student_interviews = {}
 
     for _, row in df.iterrows():
         student_name = str(row.get("Name", "Unknown Student"))
@@ -121,10 +122,9 @@ def process_student_data(csv_file: Any, student_interviews: Dict[str, Any] = Non
         The higher the score, the more support they need from teachers.
 
         Academic Data:
-        - Sem 1 Score: {row.get('Sem 1 Score', 'N/A')}
-        - Sem 1 Feedback: {row.get('Sem 1 Feedback', '')}
-        - Sem 2 Score: {row.get('Sem 2 Score', 'N/A')}
-        - Sem 2 Feedback: {row.get('Sem 2 Feedback', '')}
+        - Semester 1 Score: {row.get('Semester 1 Score', 'N/A')}
+        - Semester 2 Score: {row.get('Semester 2 Score', 'N/A')}
+        - Teacher Feedback: {row.get('Feedback', '')}
 
         Interview Insights: {json.dumps(interview_data)}
 

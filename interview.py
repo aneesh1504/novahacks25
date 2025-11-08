@@ -34,10 +34,10 @@ def call_openrouter_api(prompt: str) -> str:
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-        print(f"[DEBUG] OpenRouter API response status: {response.status_code}")
+        print(f"[DEBUG] interview OpenRouter API response status: {response.status_code}")
         response.raise_for_status()
         data = response.json()
-        print(f"[DEBUG] OpenRouter API response data: {data}")
+        print(f"[DEBUG] interview OpenRouter API response data: {data}")
 
         # Extract text content
         message = data.get("choices", [{}])[0].get("message", {}).get("content", "")
