@@ -159,24 +159,32 @@ def process_teacher_data(teacher_document: Any, teacher_id: str) -> Dict[str, An
     text_content = extract_document_text(teacher_document)
 
     prompt = f"""
-    Analyze this teacher profile and rate them on a scale of 1–10 for each dimension.
+    You are analyzing a teacher profile to evaluate teaching effectiveness and student compatibility.
 
     Teacher Profile:
     {text_content}
 
-    Please provide scores for:
-    - subject_expertise: Deep knowledge in subject area
-    - patience_level: Ability to work with struggling students
-    - innovation: Use of creative teaching methods
-    - structure: Preference for organized, systematic approach
-    - communication: Clear explanation and feedback skills
-    - special_needs_support: Experience with learning disabilities
-    - student_engagement: Ability to motivate and connect
-    - classroom_management: Maintaining productive environment
+    Tasks:
+    1. Summarize this teacher’s approach in 2–3 sentences.
+    2. Rate on a 1–10 scale (with a 1–2 = very weak, 5 = average, 8–10 = exceptional):
+    - subject_expertise
+    - patience_level
+    - innovation
+    - structure
+    - communication
+    - special_needs_support
+    - student_engagement
+    - classroom_management
+    3. Infer the TEACHER ARCHETYPE (choose one): 
+    ["Structured Nurturer", "Creative Motivator", "Tech Innovator", "Special-Needs Specialist", "High-Performance Coach"]
+    4. Infer the STUDENT PROFILE(S) that would thrive most with this teacher. 
+    (e.g., “gifted self-directed learners”, “students with math anxiety”, “students needing firm structure”)
+    5. Return ONLY valid JSON in this format:
 
-    Return ONLY valid JSON in this format:
     {{
-        "teacher_id": "{teacher_id}",
+    "teacher_id": "{teacher_id}",
+    "summary": "<brief summary>",
+    "scores": {{
         "subject_expertise": 8,
         "patience_level": 7,
         "innovation": 6,
@@ -184,9 +192,12 @@ def process_teacher_data(teacher_document: Any, teacher_id: str) -> Dict[str, An
         "communication": 8,
         "special_needs_support": 5,
         "student_engagement": 7,
-        "classroom_management": 8,
-        "raw_strengths": ["strength1", "strength2"],
-        "raw_weaknesses": ["weakness1", "weakness2"]
+        "classroom_management": 8
+    }},
+    "teacher_archetype": "Special-Needs Specialist",
+    "best_fit_students": ["students with learning disabilities", "those needing structured guidance"],
+    "raw_strengths": ["Empathetic", "Organized", "Multi-sensory methods"],
+    "raw_weaknesses": ["Slow pace", "Limited adaptability"]
     }}
     """
 

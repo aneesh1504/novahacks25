@@ -113,34 +113,50 @@ def process_student_data(csv_file: Any, student_interviews: Dict[str, Any] = Non
         student_name = str(row.get("Name", "Unknown Student"))
         interview_data = student_interviews.get(student_name, {})
 
-        # Combine academic + qualitative data for prompt
         prompt = f"""
-        You are an educational data analyst. Based on the student's grades,
-        feedback, and interview insights, assign numerical scores (1–10) for
-        how much support this student *needs* in each area.
-
-        The higher the score, the more support they need from teachers.
+        You are an educational psychologist analyzing a student’s academic data and interview responses.
+        Estimate both their academic support needs and their learning preferences.
 
         Academic Data:
         - Semester 1 Score: {row.get('Semester 1 Score', 'N/A')}
         - Semester 2 Score: {row.get('Semester 2 Score', 'N/A')}
         - Teacher Feedback: {row.get('Feedback', '')}
 
-        Interview Insights: {json.dumps(interview_data)}
+        Interview Insights:
+        {json.dumps(interview_data, indent=2)}
 
-        Return ONLY valid JSON in this format:
+        Tasks:
+        1. Summarize the student's learning profile (2–3 sentences).
+        2. Rate from 1–10 how much support they need in each area:
+        - subject_support_needed
+        - patience_needed
+        - innovation_needed
+        - structure_needed
+        - communication_needed
+        - special_needs_support
+        - engagement_needed
+        - behavior_support_needed
+        3. Identify their primary learning_style (visual, auditory, kinesthetic, or blended).
+        4. Identify the TEACHER PROFILE that would best fit this student 
+        (e.g., “patient structured teacher”, “high-energy motivator”, “tech-based creative instructor”)
+        5. Return ONLY valid JSON:
+
         {{
-            "student_id": "{student_name}",
-            "subject_support_needed": 0,
-            "patience_needed": 0,
-            "innovation_needed": 0,
-            "structure_needed": 0,
-            "communication_needed": 0,
-            "special_needs_support": 0,
-            "engagement_needed": 0,
-            "behavior_support_needed": 0,
-            "learning_style": "visual/auditory/kinesthetic",
-            "confidence_level": 0
+        "student_id": "{student_name}",
+        "summary": "<short summary>",
+        "scores": {{
+            "subject_support_needed": 7,
+            "patience_needed": 8,
+            "innovation_needed": 5,
+            "structure_needed": 9,
+            "communication_needed": 6,
+            "special_needs_support": 8,
+            "engagement_needed": 7,
+            "behavior_support_needed": 4
+        }},
+        "learning_style": "visual",
+        "best_teacher_profile": "patient structured teacher",
+        "confidence_level": 6
         }}
         """
 

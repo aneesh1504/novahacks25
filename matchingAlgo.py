@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from typing import List, Dict, Any
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 # ============================================================
-# MAIN MATCHING FUNCTION
+# MAIN MATCHING PIPELINE
 # ============================================================
 
 def run_matching_algorithm(
@@ -11,7 +13,7 @@ def run_matching_algorithm(
     student_profiles: List[Dict[str, Any]],
     constraints: Dict[str, Any]
 ) -> Dict[str, List[str]]:
-    """Run optimization algorithm to match teachers and students."""
+    """Optimized teacher–student matching using adaptive weighting and semantic similarity."""
     if not teacher_profiles or not student_profiles:
         print("[WARN] Empty teacher or student list. Returning empty match set.")
         return {}
@@ -31,50 +33,12 @@ def calculate_compatibility_matrix(
     students: List[Dict[str, Any]]
 ) -> np.ndarray:
     """
-    Calculate compatibility scores between every teacher-student pair.
-    Returns a matrix of shape (num_students, num_teachers).
+    Calculate compatibility between each teacher–student pair.
+    Uses weighted cosine similarity + semantic alignment if available.
     """
     matrix = np.zeros((len(students), len(teachers)))
 
-    # Optional per-field weights (importance)
-    weights = {
-        "subject_expertise": 1.2,
-        "patience_level": 1.0,
-        "innovation": 0.8,
-        "structure": 0.8,
-        "communication": 1.0,
-        "special_needs_support": 1.5,
-        "student_engagement": 1.0,
-        "classroom_management": 1.0
-    }
-
-    for i, student in enumerate(students):
-        for j, teacher in enumerate(teachers):
-            score_sum, weight_sum = 0.0, 0.0
-
-            # Direct relationships (higher teacher + higher student need = better)
-            for field, weight in weights.items():
-                student_key = _map_student_field(field)
-                if student_key not in student:
-                    continue  # skip missing fields
-
-                t_val = float(teacher.get(field, 0))
-                s_val = float(student.get(student_key, 0))
-
-                # Normalized product
-                pair_score = (t_val * s_val) / 10.0
-                score_sum += pair_score * weight
-                weight_sum += weight
-
-            # Normalize score per teacher-student pair
-            matrix[i, j] = score_sum / max(weight_sum, 1e-6)
-
-    return matrix
-
-
-def _map_student_field(teacher_field: str) -> str:
-    """Map teacher fields to their corresponding student need fields."""
-    mapping = {
+    field_map = {
         "subject_expertise": "subject_support_needed",
         "patience_level": "patience_needed",
         "innovation": "innovation_needed",
@@ -84,7 +48,75 @@ def _map_student_field(teacher_field: str) -> str:
         "student_engagement": "engagement_needed",
         "classroom_management": "behavior_support_needed"
     }
-    return mapping.get(teacher_field, teacher_field)
+
+    base_weights = {
+        "subject_expertise": 1.2,
+        "patience_level": 1.2,
+        "innovation": 0.9,
+        "structure": 1.0,
+        "communication": 1.1,
+        "special_needs_support": 1.5,
+        "student_engagement": 1.0,
+        "classroom_management": 1.0
+    }
+
+    for i, student in enumerate(students):
+        for j, teacher in enumerate(teachers):
+            # --- Build weighted numeric vectors ---
+            t_vec, s_vec, w_vec = [], [], []
+            for t_field, s_field in field_map.items():
+                t_val = float(teacher.get(t_field, 0))
+                s_val = float(student.get(s_field, 0))
+                weight = base_weights[t_field]
+
+                # Adaptive weighting: emphasize needs
+                if s_val > 7:
+                    weight *= 1.25
+                if student.get("confidence_level", 5) < 5 and t_field in ["patience_level", "structure"]:
+                    weight *= 1.2
+
+                t_vec.append(t_val)
+                s_vec.append(s_val)
+                w_vec.append(weight)
+
+            t_vec, s_vec, w_vec = np.array(t_vec), np.array(s_vec), np.array(w_vec)
+
+            # --- Weighted cosine similarity ---
+            num = np.sum(w_vec * t_vec * s_vec)
+            denom = np.sqrt(np.sum(w_vec * t_vec**2)) * np.sqrt(np.sum(w_vec * s_vec**2))
+            cosine_score = num / denom if denom > 0 else 0
+
+            # --- Penalty for mismatched fields ---
+            diff_penalty = np.mean(np.abs(t_vec - s_vec)) / 10  # 0–1 scale
+            combined_score = (cosine_score - diff_penalty)
+
+            # --- Rescale (-1,1) → (0,10) ---
+            combined_score = max(0, min(10, (combined_score + 1) * 5))
+
+            # --- Bonus for strong overlaps ---
+            high_need_bonus = np.mean([(t * s) / 10 for t, s in zip(t_vec, s_vec) if s > 7]) * 0.4
+            combined_score = min(10, combined_score + high_need_bonus)
+
+            # --- Optional: semantic similarity ---
+            semantic_weight = 0.2
+            if "teacher_archetype" in teacher and "best_teacher_profile" in student:
+                semantic_score = _semantic_similarity(
+                    teacher["teacher_archetype"], student["best_teacher_profile"]
+                ) * 10  # scale to 0–10
+                combined_score = 0.8 * combined_score + semantic_weight * semantic_score
+
+            matrix[i, j] = round(combined_score, 3)
+
+    return matrix
+
+
+def _semantic_similarity(a: str, b: str) -> float:
+    """Lightweight cosine similarity for text (no external embeddings)."""
+    # Convert to word vectors (bag-of-words cosine)
+    a_words, b_words = set(a.lower().split()), set(b.lower().split())
+    common = len(a_words.intersection(b_words))
+    denom = np.sqrt(len(a_words) * len(b_words))
+    return common / denom if denom > 0 else 0.0
 
 
 # ============================================================
@@ -96,26 +128,24 @@ def assign_students(
     teachers: List[Dict[str, Any]],
     students: List[Dict[str, Any]]
 ) -> Dict[str, List[str]]:
-    """
-    Use Hungarian algorithm to assign students to teachers for max compatibility.
-    """
-    num_students, num_teachers = matrix.shape
-    student_indices, teacher_indices = linear_sum_assignment(-matrix)  # maximize compatibility
-
+    """Assign students optimally using Hungarian algorithm."""
+    student_idx, teacher_idx = linear_sum_assignment(-matrix)
     assignments: Dict[str, List[str]] = {}
-    for s_idx, t_idx in zip(student_indices, teacher_indices):
-        t_id = teachers[t_idx]["teacher_id"]
-        s_id = students[s_idx]["student_id"]
+
+    for s_i, t_i in zip(student_idx, teacher_idx):
+        t_id = teachers[t_i]["teacher_id"]
+        s_id = students[s_i]["student_id"]
         assignments.setdefault(t_id, []).append(s_id)
 
-    # Handle leftover students (if more students than teachers)
-    assigned_students = {s for lst in assignments.values() for s in lst}
-    unassigned_students = [s for s in students if s["student_id"] not in assigned_students]
-    if unassigned_students:
+    # Fill any leftovers
+    all_assigned = {s for lst in assignments.values() for s in lst}
+    unassigned = [s for s in students if s["student_id"] not in all_assigned]
+
+    if unassigned:
         teacher_ids = list(assignments.keys())
-        for i, student in enumerate(unassigned_students):
+        for i, stu in enumerate(unassigned):
             target = teacher_ids[i % len(teacher_ids)]
-            assignments[target].append(student["student_id"])
+            assignments[target].append(stu["student_id"])
 
     return assignments
 
@@ -125,7 +155,7 @@ def assign_students(
 # ============================================================
 
 def balance_class_sizes(assignments: Dict[str, List[str]], constraints: Dict[str, Any]) -> Dict[str, List[str]]:
-    """Ensure each class stays within min/max constraints."""
+    """Keep classes within min/max range while maintaining fairness."""
     max_size = constraints.get("max_class_size", 25)
     min_size = constraints.get("min_class_size", 10)
 
@@ -133,20 +163,18 @@ def balance_class_sizes(assignments: Dict[str, List[str]], constraints: Dict[str
     teacher_ids = list(assignments.keys())
     avg_size = len(all_students) // max(1, len(teacher_ids))
 
-    new_assignments = {tid: [] for tid in teacher_ids}
+    new_assignments = {t: [] for t in teacher_ids}
     idx = 0
-    for tid in teacher_ids:
+    for t in teacher_ids:
         size = min(max_size, max(min_size, avg_size))
-        new_assignments[tid] = all_students[idx:idx+size]
+        new_assignments[t] = all_students[idx:idx + size]
         idx += size
 
-    # Add leftovers if any
-    if idx < len(all_students):
-        leftover = all_students[idx:]
-        for i, sid in enumerate(leftover):
-            new_assignments[teacher_ids[i % len(teacher_ids)]].append(sid)
+    # handle leftovers
+    leftover = all_students[idx:]
+    for i, sid in enumerate(leftover):
+        new_assignments[teacher_ids[i % len(teacher_ids)]].append(sid)
 
-    # Remove empty teacher slots
     return {k: v for k, v in new_assignments.items() if v}
 
 
@@ -154,32 +182,56 @@ def balance_class_sizes(assignments: Dict[str, List[str]], constraints: Dict[str
 # LOCAL TEST
 # ============================================================
 
-def json_pretty(obj: Any) -> str:
-    import json
-    return json.dumps(obj, indent=2)
-
-
 if __name__ == "__main__":
     teachers = [
-        {"teacher_id": "Mr. David Chen", "subject_expertise": 10, "patience_level": 2,
-         "innovation": 7, "structure": 9, "communication": 6, "special_needs_support": 1,
-         "student_engagement": 5, "classroom_management": 8},
-        {"teacher_id": "Ms. Amanda Tan", "subject_expertise": 9, "patience_level": 10,
-         "innovation": 6, "structure": 9, "communication": 8, "special_needs_support": 10,
-         "student_engagement": 7, "classroom_management": 8}
+        {
+            "teacher_id": "Mr. David Chen",
+            "subject_expertise": 10, "patience_level": 2, "innovation": 7,
+            "structure": 9, "communication": 6, "special_needs_support": 1,
+            "student_engagement": 5, "classroom_management": 8,
+            "teacher_archetype": "High-Performance Coach"
+        },
+        {
+            "teacher_id": "Ms. Amanda Tan",
+            "subject_expertise": 9, "patience_level": 10, "innovation": 6,
+            "structure": 9, "communication": 8, "special_needs_support": 10,
+            "student_engagement": 7, "classroom_management": 8,
+            "teacher_archetype": "Special-Needs Specialist"
+        }
     ]
 
     students = [
-        {"student_id": "Emily", "subject_support_needed": 9, "patience_needed": 8,
-         "innovation_needed": 5, "structure_needed": 6, "communication_needed": 6,
-         "special_needs_support": 2, "engagement_needed": 7, "behavior_support_needed": 4},
-        {"student_id": "Marcus", "subject_support_needed": 3, "patience_needed": 10,
-         "innovation_needed": 7, "structure_needed": 8, "communication_needed": 9,
-         "special_needs_support": 8, "engagement_needed": 5, "behavior_support_needed": 3},
-        {"student_id": "Aisha", "subject_support_needed": 8, "patience_needed": 9,
-         "innovation_needed": 6, "structure_needed": 5, "communication_needed": 7,
-         "special_needs_support": 10, "engagement_needed": 8, "behavior_support_needed": 6}
+        {
+            "student_id": "Emily",
+            "subject_support_needed": 9, "patience_needed": 8,
+            "innovation_needed": 5, "structure_needed": 6,
+            "communication_needed": 6, "special_needs_support": 2,
+            "engagement_needed": 7, "behavior_support_needed": 4,
+            "confidence_level": 6,
+            "best_teacher_profile": "patient structured teacher"
+        },
+        {
+            "student_id": "Marcus",
+            "subject_support_needed": 3, "patience_needed": 10,
+            "innovation_needed": 7, "structure_needed": 8,
+            "communication_needed": 9, "special_needs_support": 8,
+            "engagement_needed": 5, "behavior_support_needed": 3,
+            "confidence_level": 8,
+            "best_teacher_profile": "special-needs specialist"
+        },
+        {
+            "student_id": "Aisha",
+            "subject_support_needed": 8, "patience_needed": 9,
+            "innovation_needed": 6, "structure_needed": 5,
+            "communication_needed": 7, "special_needs_support": 10,
+            "engagement_needed": 8, "behavior_support_needed": 6,
+            "confidence_level": 4,
+            "best_teacher_profile": "empathetic motivator"
+        }
     ]
 
-    matches = run_matching_algorithm(teachers, students, {"max_class_size": 2, "min_class_size": 1})
-    print("\nFinal matches:\n", json_pretty(matches))
+    matches = run_matching_algorithm(
+        teachers, students, {"max_class_size": 2, "min_class_size": 1}
+    )
+
+    import json; print(json.dumps(matches, indent=2))
