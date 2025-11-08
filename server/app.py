@@ -3,9 +3,24 @@ import json
 import os
 import wave
 from pathlib import Path
+import tempfile
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file
 from vosk import Model, KaldiRecognizer
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# TTS imports
+try:
+    from elevenlabs.client import ElevenLabs
+    from elevenlabs import VoiceSettings
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+    ElevenLabs = None
+    VoiceSettings = None
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT
@@ -14,10 +29,11 @@ SAMPLE_RATE = 16000
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
 
-# Lazy model load so server can start without model present
-_model: Model | None = None
+# Lazy model loading so server can start without models present
+_model = None  # Model | None
+_tts_model = None  # TTS | None
 
-def get_model() -> Model:
+def get_model():
     global _model
     if _model is None:
         model_path = DEFAULT_MODEL_PATH
@@ -27,6 +43,21 @@ def get_model() -> Model:
             )
         _model = Model(model_path)
     return _model
+
+def get_tts_model():
+    global _tts_model
+    if _tts_model is None:
+        if not TTS_AVAILABLE:
+            raise RuntimeError("ElevenLabs library not installed. Run: pip install elevenlabs")
+        
+        # Get API key from environment variable
+        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        if not api_key:
+            raise RuntimeError("ELEVENLABS_API_KEY environment variable not set")
+        
+        # Initialize ElevenLabs client
+        _tts_model = ElevenLabs(api_key=api_key)
+    return _tts_model
 
 @app.route("/")
 def index():
@@ -67,6 +98,69 @@ def transcribe():
         text = ""
 
     return jsonify({"text": text})
+
+@app.post("/tts")
+def text_to_speech():
+    if not TTS_AVAILABLE:
+        return jsonify({"error": "TTS not available"}), 500
+    
+    data = request.get_json()
+    if not data or "text" not in data:
+        return jsonify({"error": "missing text field"}), 400
+    
+    text = data["text"]
+    voice = data.get("voice", "Sarah")  # Default to Sarah voice (available in your account)
+    stability = data.get("stability", 0.5)  # Voice stability (0.0-1.0)
+    similarity_boost = data.get("similarity_boost", 0.5)  # Voice similarity (0.0-1.0)
+    
+    if not text.strip():
+        return jsonify({"error": "empty text"}), 400
+    
+    try:
+        # Get ElevenLabs client
+        client = get_tts_model()
+        
+        # Configure voice settings
+        voice_settings = VoiceSettings(
+            stability=stability,
+            similarity_boost=similarity_boost,
+            style=0.0,
+            use_speaker_boost=True
+        )
+        
+        # Generate audio using ElevenLabs
+        audio_generator = client.generate(
+            text=text,
+            voice=voice,
+            voice_settings=voice_settings,
+            model="eleven_multilingual_v2"
+        )
+        
+        # Convert generator to bytes
+        audio_bytes = b"".join(audio_generator)
+        
+        # Create temporary file for output
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp_file:
+            output_path = tmp_file.name
+            tmp_file.write(audio_bytes)
+        
+        # Return the audio file
+        return send_file(
+            output_path,
+            mimetype="audio/mp3",
+            as_attachment=False,
+            download_name="tts.mp3"
+        )
+    
+    except Exception as e:
+        return jsonify({"error": f"TTS generation failed: {str(e)}"}), 500
+    finally:
+        # Clean up temp file after sending
+        try:
+            if 'output_path' in locals():
+                os.unlink(output_path)
+        except:
+            pass
 
 # Serve other static files (JS, CSS, etc.)
 @app.route('/<path:path>')

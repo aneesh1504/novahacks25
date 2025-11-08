@@ -36,6 +36,9 @@ const startBtn = document.getElementById('startInterviewBtn');
 const stopBtn = document.getElementById('stopRecordingBtn');
 const exportBtn = document.getElementById('exportBtn');
 const exportSttBtn = document.getElementById('exportSttBtn');
+const enableTtsBtn = document.getElementById('enableTtsBtn');
+const replayQuestionBtn = document.getElementById('replayQuestionBtn');
+const voiceSelect = document.getElementById('voiceSelect');
 const questionEl = document.getElementById('currentQuestion');
 const transcriptEl = document.getElementById('transcript');
 const sttStatusEl = document.getElementById('sttStatus');
@@ -246,9 +249,18 @@ function appendTranscriptItem(qIndex, audioUrl, blob, durationSec) {
 
 const recordedAnswers = [];
 
+// TTS (Text-to-Speech) variables
+let ttsSupported = false;
+let voices = [];
+let currentUtterance = null;
+
 function renderCurrentQuestion() {
   if (currentQuestionIndex >= 0 && currentQuestionIndex < QUESTIONS.length) {
     questionEl.textContent = QUESTIONS[currentQuestionIndex];
+    // Speak the question if TTS is enabled
+    if (enableTtsBtn.checked && ttsSupported) {
+      speakQuestion(QUESTIONS[currentQuestionIndex]);
+    }
   } else {
     questionEl.textContent = '';
   }
@@ -256,6 +268,7 @@ function renderCurrentQuestion() {
 
 async function nextQuestion() {
   stopBtn.disabled = true;
+  replayQuestionBtn.disabled = true;
   currentQuestionIndex += 1;
   if (currentQuestionIndex >= QUESTIONS.length) return finishInterview();
 
@@ -266,14 +279,17 @@ async function nextQuestion() {
   // Start recording a fresh answer
   startRecording();
   stopBtn.disabled = false;
+  replayQuestionBtn.disabled = false;
 }
 
 function finishInterview() {
   stopBtn.disabled = true;
   startBtn.disabled = false;
   exportBtn.disabled = false;
+  replayQuestionBtn.disabled = true;
   setStatus('Interview finished. You can play back answers or export the transcript.');
   stopVisualize();
+  stopSpeaking();
 }
 
 function exportTranscript() {
@@ -416,6 +432,7 @@ async function startInterview() {
     await initAudio();
     await audioCtx.resume();
     initCanvas();
+    initTts();
     startVisualize();
     setStatus('Microphone ready. Beginning interview...');
     await nextQuestion();
@@ -435,6 +452,234 @@ stopBtn.addEventListener('click', () => {
 });
 exportBtn.addEventListener('click', exportTranscript);
 exportSttBtn.addEventListener('click', exportSttTranscript);
+replayQuestionBtn.addEventListener('click', () => {
+  if (currentQuestionIndex >= 0 && currentQuestionIndex < QUESTIONS.length) {
+    speakQuestion(QUESTIONS[currentQuestionIndex]);
+  }
+});
+
+// TTS Functions
+function initTts() {
+  // Check if ElevenLabs TTS is available on the server
+  checkXttsAvailability();
+  
+  // Keep browser TTS as fallback but prefer ElevenLabs
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+}
+
+async function checkXttsAvailability() {
+  try {
+    const response = await fetch('/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: "test" })
+    });
+    
+    if (response.ok) {
+      ttsSupported = true;
+      enableTtsBtn.disabled = false;
+      // ElevenLabs voices (based on available voices in your account)
+      voiceSelect.innerHTML = `
+        <option value="Sarah">Sarah (ElevenLabs - Female)</option>
+        <option value="Laura">Laura (ElevenLabs - Female)</option>
+        <option value="Alice">Alice (ElevenLabs - Female)</option>
+        <option value="Matilda">Matilda (ElevenLabs - Female)</option>
+        <option value="Jessica">Jessica (ElevenLabs - Female)</option>
+        <option value="Lily">Lily (ElevenLabs - Female)</option>
+        <option value="Clyde">Clyde (ElevenLabs - Male)</option>
+        <option value="Roger">Roger (ElevenLabs - Male)</option>
+        <option value="Charlie">Charlie (ElevenLabs - Male)</option>
+        <option value="George">George (ElevenLabs - Male)</option>
+        <option value="Callum">Callum (ElevenLabs - Male)</option>
+        <option value="Harry">Harry (ElevenLabs - Male)</option>
+        <option value="Liam">Liam (ElevenLabs - Male)</option>
+        <option value="Will">Will (ElevenLabs - Male)</option>
+        <option value="Eric">Eric (ElevenLabs - Male)</option>
+        <option value="Chris">Chris (ElevenLabs - Male)</option>
+        <option value="Brian">Brian (ElevenLabs - Male)</option>
+        <option value="Daniel">Daniel (ElevenLabs - Male)</option>
+        <option value="Bill">Bill (ElevenLabs - Male)</option>
+        <option value="River">River (ElevenLabs - Unisex)</option>
+      `;
+      if ('speechSynthesis' in window && speechSynthesis.getVoices().length > 0) {
+        voiceSelect.innerHTML += '<option value="">Browser TTS (Fallback)</option>';
+      }
+    } else {
+      setupBrowserTtsOnly();
+    }
+  } catch (error) {
+    console.log('ElevenLabs TTS not available, using browser TTS');
+    setupBrowserTtsOnly();
+  }
+}
+
+function setupBrowserTtsOnly() {
+  if (!('speechSynthesis' in window)) {
+    ttsSupported = false;
+    enableTtsBtn.disabled = true;
+    enableTtsBtn.checked = false;
+    voiceSelect.innerHTML = '<option>TTS not supported</option>';
+    return;
+  }
+  
+  ttsSupported = true;
+  loadVoices();
+}
+
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+  voiceSelect.innerHTML = '';
+  
+  if (voices.length === 0) {
+    voiceSelect.innerHTML = '<option>Loading voices...</option>';
+    return;
+  }
+
+  // Add default option
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Default voice';
+  voiceSelect.appendChild(defaultOption);
+
+  // Add available voices, prefer English ones
+  const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+  const otherVoices = voices.filter(v => !v.lang.startsWith('en'));
+  
+  [...englishVoices, ...otherVoices].forEach((voice, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    voiceSelect.appendChild(option);
+  });
+
+  // Select a good default English voice if available
+  const preferredVoice = englishVoices.find(v => v.default) || englishVoices[0];
+  if (preferredVoice) {
+    const index = voices.indexOf(preferredVoice);
+    voiceSelect.value = index;
+  }
+}
+
+function speakQuestion(text) {
+  stopSpeaking(); // Stop any current speech
+
+  const selectedVoice = voiceSelect.value;
+  
+  if (selectedVoice && selectedVoice !== '') {
+    speakWithElevenLabs(text, selectedVoice);
+  } else {
+    speakWithBrowserTts(text);
+  }
+}
+
+async function speakWithElevenLabs(text, voice = 'Rachel') {
+  try {
+    setStatus('Generating ElevenLabs voice...');
+    
+    const response = await fetch('/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        text: text,
+        voice: voice,
+        stability: 0.5,
+        similarity_boost: 0.5
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('TTS request failed');
+    }
+    
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    
+    audio.onplay = () => {
+      setStatus('Speaking question...');
+      currentUtterance = { audio, url: audioUrl }; // Store for cleanup
+    };
+    
+    audio.onended = () => {
+      setStatus(`Question ${currentQuestionIndex + 1} of ${QUESTIONS.length}. Recording your answer...`);
+      URL.revokeObjectURL(audioUrl);
+      currentUtterance = null;
+    };
+    
+    audio.onerror = () => {
+      setStatus('ElevenLabs TTS playback failed, falling back to browser TTS');
+      URL.revokeObjectURL(audioUrl);
+      speakWithBrowserTts(text);
+    };
+
+    await audio.play();
+    
+  } catch (error) {
+    console.error('ElevenLabs TTS error:', error);
+    setStatus('ElevenLabs TTS failed, using browser TTS');
+    speakWithBrowserTts(text);
+  }
+}
+
+function speakWithBrowserTts(text) {
+  if (!('speechSynthesis' in window)) {
+    setStatus('TTS not available');
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // Set voice if selected
+  const selectedIndex = voiceSelect.selectedIndex;
+  if (selectedIndex > 0 && voices.length > 0) {
+    const voiceIndex = selectedIndex - 1; // Adjust for XTTS option
+    if (voices[voiceIndex]) {
+      utterance.voice = voices[voiceIndex];
+    }
+  }
+
+  utterance.rate = 0.9; // Slightly slower for clarity
+  utterance.pitch = 1.0;
+  utterance.volume = 0.8;
+
+  utterance.onstart = () => {
+    setStatus('Speaking question...');
+  };
+
+  utterance.onend = () => {
+    setStatus(`Question ${currentQuestionIndex + 1} of ${QUESTIONS.length}. Recording your answer...`);
+  };
+
+  utterance.onerror = (e) => {
+    console.error('Browser TTS error:', e);
+    setStatus(`Question ${currentQuestionIndex + 1} of ${QUESTIONS.length}. Recording your answer...`);
+  };
+
+  currentUtterance = utterance;
+  speechSynthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+  if (currentUtterance) {
+    if (currentUtterance.audio) {
+      // XTTS audio cleanup
+      currentUtterance.audio.pause();
+      currentUtterance.audio.currentTime = 0;
+      if (currentUtterance.url) {
+        URL.revokeObjectURL(currentUtterance.url);
+      }
+    } else if (speechSynthesis.speaking) {
+      // Browser TTS cleanup
+      speechSynthesis.cancel();
+    }
+    currentUtterance = null;
+  }
+}
 
 // Accessibility: resume audio context on user gesture for iOS/macOS Safari quirks
 window.addEventListener('click', async () => {

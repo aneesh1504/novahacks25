@@ -11,8 +11,9 @@ Date: 2025-11-08
 
 ## High-level Architecture
 - Single-page web app (SPA) with optional STT backend
-- Technologies: HTML, CSS, vanilla JavaScript, Web Audio API, AudioWorklet, MediaRecorder API
-- Optional Flask + Vosk server for offline speech-to-text
+- Technologies: HTML, CSS, vanilla JavaScript, Web Audio API, AudioWorklet, MediaRecorder API, **XTTS neural TTS + Web Speech API fallback**
+- Flask + Vosk server for offline speech-to-text
+- **Flask + XTTS server for neural text-to-speech**
 
 ```
 User
@@ -36,11 +37,19 @@ UI: Start / Stop / Export buttons, current question, transcript list
 ### Interview Flow
 - Predefined `QUESTIONS[]`
 - State: idle → recording answer N → finalize → next question → finish
+- **TTS**: Questions spoken using XTTS neural voice (with browser fallback)
+- Voice selection and replay controls available
 
 ### STT Backend (optional)
 - Flask server (`server/app.py`) exposes `POST /transcribe`
 - Vosk model loaded lazily; expects mono 16kHz 16-bit PCM WAV
 - Frontend resamples raw PCM to 16 kHz and encodes WAV before upload
+
+### TTS Backend
+- Flask server (`server/app.py`) exposes `POST /tts`
+- XTTS v2 model loaded lazily; generates neural voice from text
+- Supports voice cloning with reference audio (future enhancement)
+- Browser TTS fallback for offline or error scenarios
 
 ### Export
 - Basic transcript (questions only)
@@ -48,10 +57,11 @@ UI: Start / Stop / Export buttons, current question, transcript list
 
 ## Key Design Choices
 - Progressive enhancement: runs without STT; adds Vosk if backend started
+- **Neural TTS**: Uses XTTS v2 for high-quality voice; graceful fallback to browser `speechSynthesis`
 - Offline speech-to-text: Vosk model served locally; no cloud dependency
 - Separation of concerns: compressed playback (MediaRecorder) vs. raw PCM (AudioWorklet) so STT unaffected by codec
 - Resampling client-side: linear interpolation to 16kHz keeps server simple
-- Error resilience: STT failure does not block interview flow
+- Error resilience: TTS/STT failure does not block interview flow
 
 ## Data Model
 - `QUESTIONS: string[]`
@@ -65,8 +75,9 @@ UI: Start / Stop / Export buttons, current question, transcript list
 - Possible improvements: re-record answers, show input volume meter, add punctuation model/post-processing
 
 ## Browser Support
-- Requires modern browser with `getUserMedia`, `AudioContext`, `MediaRecorder`. `AudioWorklet` required for STT path.
+- Requires modern browser with `getUserMedia`, `AudioContext`, `MediaRecorder`. `AudioWorklet` required for STT path. **`speechSynthesis` API required for TTS fallback**.
 - Safari: may need user gesture to resume audio context; if AudioWorklet unsupported, STT is disabled gracefully.
+- **XTTS**: Requires Python backend with GPU support recommended (but works on CPU); ~2GB model download on first use
 
 ## Security/Privacy
 - Mic access only after explicit user consent

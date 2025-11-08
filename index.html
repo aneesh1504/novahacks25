@@ -17,6 +17,16 @@
       <button id="exportBtn" disabled>Export Transcript (Questions Only)</button>
       <button id="exportSttBtn" disabled>Export Transcript (With STT)</button>
     </div>
+    <div id="voiceControls">
+      <label>
+        <input type="checkbox" id="enableTtsBtn" checked> Enable voice questions
+      </label>
+      <button id="replayQuestionBtn" disabled>Replay Question</button>
+      <label for="voiceSelect">Voice:</label>
+      <select id="voiceSelect">
+        <option value="">Loading voices...</option>
+      </select>
+    </div>
     <section id="currentQuestion"></section>
     <section id="sttStatus" aria-live="polite" class="stt-status"></section>
     <section id="transcript"></section>
