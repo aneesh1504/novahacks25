@@ -3,12 +3,14 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -16,10 +18,11 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    console.log("[v0] Login attempted with:", { email, password })
+    // Accept any credentials and immediately advance
+    setTimeout(() => {
+      setIsLoading(false)
+      router.push("/upload")
+    }, 600)
   }
 
   const handleSocialLogin = (provider: string) => {
@@ -187,15 +190,6 @@ export default function LoginPage() {
               </svg>
               Continue with Meta
             </Button>
-          </div>
-
-          <div className="text-center">
-            <a
-              href="#"
-              className="text-sm text-card-foreground/70 hover:text-card-foreground font-sans transition-colors"
-            >
-              Forgot your password?
-            </a>
           </div>
         </CardContent>
       </Card>

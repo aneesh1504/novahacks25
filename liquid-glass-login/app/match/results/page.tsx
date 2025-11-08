@@ -10,6 +10,7 @@ import { getProfiles, getMatches, clearSession } from "@/lib/state/session"
 import type { TeacherProfile, StudentProfile, MatchResponse } from "@/lib/api/types"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
 import { Users, GraduationCap, RefreshCcw } from "lucide-react"
+import { ChatAssistant } from "@/components/chat/chat-assistant"
 
 function toTeacherVector(t: TeacherProfile) {
   return [
@@ -67,20 +68,20 @@ export default function MatchResults() {
 
   return (
     <div className="min-h-screen w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/images/gradient-background.jpg')" }}>
-      <div className="absolute inset-0 bg-white/50 backdrop-blur-2xl" />
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-2xl" />
       <div className="relative max-w-6xl mx-auto px-6 pt-12 pb-10 z-10 space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600">Match Results</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Match Results</h1>
             <p className="text-sm text-slate-700">Expand a teacher to view assigned students with combined overlays. Click a chart for a short rationale.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={()=>router.push('/upload')}><RefreshCcw className="h-4 w-4 mr-1"/>New Upload</Button>
-            <Button className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white" onClick={()=>{ clearSession(); router.push('/upload') }}>Reset</Button>
+            <Button className="bg-indigo-800 hover:bg-indigo-700 text-white" onClick={()=>{ clearSession(); router.push('/upload') }}>Reset</Button>
           </div>
         </header>
 
-        <Card className="rounded-xl border border-white/70 bg-white/60 backdrop-blur-lg shadow-lg">
+  <Card className="rounded-xl border border-white/70 bg-white/70 backdrop-blur-lg shadow-lg">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">Assignments by Teacher</CardTitle>
             <CardDescription className="text-xs text-slate-600">Click a student’s chart for a short explanation.</CardDescription>
@@ -102,7 +103,7 @@ export default function MatchResults() {
                           const sVec = toStudentVector(student)
                           const combined = sVec.map((row, idx) => ({ skill: row.skill, student: row.value, teacher: tVec[idx].value }))
                           return (
-                            <div key={`${teacherId}-${sid}`} className="rounded-lg border border-white/60 bg-white/50 backdrop-blur-xl p-2 cursor-pointer" onClick={()=>setInspect({ teacher, student })}>
+                            <div key={`${teacherId}-${sid}`} className="rounded-lg border border-white/60 bg-white/60 backdrop-blur-xl p-2 cursor-pointer" onClick={()=>setInspect({ teacher, student })}>
                               <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-slate-700">{sid}</p>
                               <ResponsiveContainer width="100%" height={280}>
                                 <RadarChart data={combined}>
@@ -124,6 +125,8 @@ export default function MatchResults() {
             </Accordion>
           </CardContent>
         </Card>
+        {/* Floating AI Assistant button available only on results page */}
+        <ChatAssistant />
       </div>
 
   <Dialog open={!!inspect} onOpenChange={(o: boolean)=>!o && setInspect(null)}>
@@ -133,8 +136,8 @@ export default function MatchResults() {
               <DialogTitle className="text-xl font-semibold">Why this pair?</DialogTitle>
               <p className="text-sm text-slate-700">{explainPair(inspect.teacher, inspect.student)}</p>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-white/60 bg-white/50 p-2">
-                  <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-pink-700">Student Profile</p>
+                <div className="rounded-lg border border-white/60 bg-white/60 p-2">
+                  <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-indigo-700">Student Profile</p>
                   <ResponsiveContainer width="100%" height={260}>
                     <RadarChart data={toStudentVector(inspect.student)}>
                       <PolarGrid stroke="rgba(0,0,0,0.15)" />
@@ -144,14 +147,14 @@ export default function MatchResults() {
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="rounded-lg border border-white/60 bg-white/50 p-2">
+                <div className="rounded-lg border border-white/60 bg-white/60 p-2">
                   <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-indigo-700">Teacher Profile</p>
                   <ResponsiveContainer width="100%" height={260}>
                     <RadarChart data={toTeacherVector(inspect.teacher)}>
                       <PolarGrid stroke="rgba(0,0,0,0.15)" />
                       <PolarAngleAxis dataKey="skill" tick={{ fill: '#334155', fontSize: 10 }} />
                       <PolarRadiusAxis domain={[0,10]} tick={{ fill: '#475569', fontSize: 9 }} stroke="rgba(0,0,0,0.25)" />
-                      <Radar dataKey="value" stroke="#4f46e5" fill="#6366f1" fillOpacity={0.3} strokeWidth={2} />
+                      <Radar dataKey="value" stroke="#4f46e5" fill="#6366f1" fillOpacity={0.24} strokeWidth={2} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>

@@ -305,7 +305,7 @@ export default function AdminMatchingDashboard() {
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         <header className="flex flex-col gap-2 md:gap-3">
-          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
             Student ↔ Teacher Compatibility
           </h1>
           <p className="text-sm md:text-base text-slate-700 max-w-2xl font-medium">
@@ -315,9 +315,9 @@ export default function AdminMatchingDashboard() {
 
         {/* Upload + Controls Panel (backend mode) */}
         {useBackend && (
-          <Card className="border border-white/70 bg-white/60 backdrop-blur-lg shadow-md">
+          <Card className="border border-white/70 bg-white/70 backdrop-blur-lg shadow-md">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold flex items-center gap-2"><Upload className="h-4 w-4 text-pink-600" /> Data Ingestion</CardTitle>
+              <CardTitle className="text-base font-semibold flex items-center gap-2"><Upload className="h-4 w-4 text-indigo-600" /> Data Ingestion</CardTitle>
               <CardDescription className="text-xs text-slate-600">Upload teacher documents & student CSV then process vectors.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -334,7 +334,7 @@ export default function AdminMatchingDashboard() {
                   <p className="text-[10px] text-slate-600">{teacherFiles.length} selected</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="font-semibold flex items-center gap-1"><FileSpreadsheet className="h-3 w-3 text-pink-600" /> Student CSV</label>
+                  <label className="font-semibold flex items-center gap-1"><FileSpreadsheet className="h-3 w-3 text-indigo-600" /> Student CSV</label>
                   <input
                     type="file"
                     accept=".csv"
@@ -344,7 +344,7 @@ export default function AdminMatchingDashboard() {
                   <p className="text-[10px] text-slate-600">{studentFile ? studentFile.name : 'None selected'}</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="font-semibold flex items-center gap-1"><RefreshCcw className="h-3 w-3 text-purple-600" /> Constraints</label>
+                  <label className="font-semibold flex items-center gap-1"><RefreshCcw className="h-3 w-3 text-indigo-600" /> Constraints</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -370,7 +370,7 @@ export default function AdminMatchingDashboard() {
               <Button
                 onClick={handleProcessData}
                 disabled={processing}
-                className="w-full py-2 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500"
+                className="w-full py-2 text-sm font-semibold bg-indigo-800 hover:bg-indigo-700 text-white"
               >
                 {processing ? 'Processing Data...' : 'Process Data'}
               </Button>
@@ -398,7 +398,7 @@ export default function AdminMatchingDashboard() {
               <Card className={cn('overflow-hidden', 'rounded-xl border border-white/70 bg-white/60 backdrop-blur-lg shadow-lg')}> 
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-pink-600" />
+                    <GraduationCap className="h-5 w-5 text-indigo-600" />
                     <CardTitle className="text-lg font-semibold text-slate-900">Select Student</CardTitle>
                   </div>
                   <CardDescription className="text-xs text-slate-600">Higher values represent greater support needs.</CardDescription>
@@ -412,7 +412,7 @@ export default function AdminMatchingDashboard() {
                           variant={selectedStudent?.id === st.id ? 'secondary' : 'outline'}
                           className={cn('text-xs justify-start flex-col items-start h-auto py-3 px-3 rounded-lg border transition-colors',
                             selectedStudent?.id === st.id
-                              ? 'bg-gradient-to-br from-pink-500/70 to-purple-500/70 text-white border-pink-500'
+                              ? 'bg-indigo-800 text-white border-indigo-700'
                               : 'bg-white/70 text-slate-800 hover:bg-white')}
                           onClick={() => {
                             setSelectedStudent(st)
@@ -430,20 +430,20 @@ export default function AdminMatchingDashboard() {
                     </div>
                   </ScrollArea>
                   <div className="h-80 rounded-lg border border-white/60 bg-white/50 backdrop-blur-xl p-2">
-                    <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-pink-700">Skill Gap Profile</p>
-                    <ResponsiveContainer width="100%" height="95%">
+                    <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-indigo-700">Skill Gap Profile</p>
+                        <ResponsiveContainer width="100%" height="95%">
                       <RadarChart data={selectedStudent?.data || []}>
                         <PolarGrid stroke="rgba(0,0,0,0.15)" />
                         <PolarAngleAxis dataKey="skill" tick={{ fill: '#334155', fontSize: 10 }} />
                         <PolarRadiusAxis domain={[0,10]} tick={{ fill: '#475569', fontSize: 9 }} stroke="rgba(0,0,0,0.25)" />
-                        <Radar dataKey="value" stroke="#db2777" fill="#fb7185" fillOpacity={0.4} strokeWidth={2} />
+                        <Radar dataKey="value" stroke="#db2777" fill="#fb7185" fillOpacity={0.35} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
                   <Button
                     onClick={handleFindMatch}
                     disabled={isMatching}
-                    className={cn('w-full py-4 font-semibold text-sm shadow-lg transition-all rounded-md', 'bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white')}
+                    className={cn('w-full py-4 font-semibold text-sm shadow-lg transition-all rounded-md bg-indigo-800 hover:bg-indigo-700 text-white')}
                   >
                     {isMatching ? 'Analyzing Compatibility...' : 'Find Best Teacher Match'}
                   </Button>
@@ -479,7 +479,7 @@ export default function AdminMatchingDashboard() {
                           <p className="text-[11px] mt-1 text-pink-700 font-medium">{matchedTeacher.teacher.specialization}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">{matchedTeacher.score}%</p>
+                          <p className="text-2xl font-bold text-indigo-800">{matchedTeacher.score}%</p>
                           <p className="text-[10px] text-slate-600 tracking-wide">Match Score</p>
                         </div>
                       </div>
@@ -490,7 +490,7 @@ export default function AdminMatchingDashboard() {
                             <PolarGrid stroke="rgba(0,0,0,0.15)" />
                             <PolarAngleAxis dataKey="skill" tick={{ fill: '#334155', fontSize: 10 }} />
                             <PolarRadiusAxis domain={[0,10]} tick={{ fill: '#475569', fontSize: 9 }} stroke="rgba(0,0,0,0.25)" />
-                            <Radar dataKey="value" stroke="#4f46e5" fill="#6366f1" fillOpacity={0.4} strokeWidth={2} />
+                            <Radar dataKey="value" stroke="#4f46e5" fill="#6366f1" fillOpacity={0.24} strokeWidth={2} />
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
@@ -505,7 +505,7 @@ export default function AdminMatchingDashboard() {
             <MatchAnalysisPanel matchedTeacher={matchedTeacher} allTeacherScores={allTeacherScores} showResults={showResults} />
 
             {useBackend && matchMap && (
-              <Card className={cn('mt-6 rounded-xl border border-white/70 bg-white/60 backdrop-blur-lg shadow-lg')}>
+              <Card className={cn('mt-6 rounded-xl border border-white/70 bg-white/70 backdrop-blur-lg shadow-lg')}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-semibold">Matches by Teacher</CardTitle>
                   <CardDescription className="text-xs text-slate-600">Expand each teacher to view assigned students with combined radar overlays.</CardDescription>
@@ -530,7 +530,7 @@ export default function AdminMatchingDashboard() {
                                   teacher: teacher.data[idx]?.value ?? 0,
                                 }))
                                 return (
-                                  <div key={`${teacherId}-${sid}`} className="rounded-lg border border-white/60 bg-white/50 backdrop-blur-xl p-2">
+                                  <div key={`${teacherId}-${sid}`} className="rounded-lg border border-white/60 bg-white/60 backdrop-blur-xl p-2">
                                     <p className="text-[11px] text-center mb-1 font-semibold tracking-wide text-slate-700">{sid}</p>
                                     <ResponsiveContainer width="100%" height={280}>
                                       <RadarChart data={combined}>
@@ -561,7 +561,7 @@ export default function AdminMatchingDashboard() {
       <Dialog open={isMatching}>
         <DialogContent className={cn('max-w-3xl border-white/70 bg-white/80 backdrop-blur-xl text-slate-800')}>          
           <div className="space-y-4">
-            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-slate-900"><Sparkles className="h-5 w-5 text-pink-600" /> Analyzing Compatibility</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-slate-900"><Sparkles className="h-5 w-5 text-indigo-600" /> Analyzing Compatibility</DialogTitle>
             <p className="text-sm text-slate-700" aria-live="polite">{selectedStudent ? (<span>Comparing <span className="font-medium">{selectedStudent.id}</span>'s gap vector with teacher strength vectors...</span>) : 'No student selected'}</p>
             <div className="relative h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -569,7 +569,7 @@ export default function AdminMatchingDashboard() {
                   <PolarGrid stroke="rgba(0,0,0,0.15)" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: '#334155', fontSize: 10, fontWeight: 600 }} />
                   <PolarRadiusAxis domain={[0,10]} tick={{ fill: '#475569', fontSize: 9 }} stroke="rgba(0,0,0,0.25)" />
-                  <Radar name="Student Gaps" dataKey="student" stroke="#db2777" fill="#fb7185" fillOpacity={0.45} strokeWidth={3} />
+                  <Radar name="Student Gaps" dataKey="student" stroke="#db2777" fill="#fb7185" fillOpacity={0.35} strokeWidth={3} />
                   {teachers.map((t, i) => (
                     <Radar
                       key={t.id}
@@ -586,8 +586,8 @@ export default function AdminMatchingDashboard() {
               </ResponsiveContainer>
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="relative w-20 h-20">
-                  <div className="absolute inset-0 rounded-full border-2 border-pink-500 animate-ping" />
-                  <div className="absolute inset-4 rounded-full border-2 border-indigo-500 animate-ping [animation-delay:0.3s]" />
+                  <div className="absolute inset-0 rounded-full border-2 border-indigo-500 animate-ping" />
+                  <div className="absolute inset-4 rounded-full border-2 border-indigo-700 animate-ping [animation-delay:0.3s]" />
                 </div>
               </div>
             </div>
@@ -634,7 +634,7 @@ function MatchAnalysisPanel({ matchedTeacher, allTeacherScores, showResults }: {
                   <span className="text-xs font-semibold">#{idx+1} {res.teacher.name}</span>
                   {idx === 0 && <CheckCircle className="h-4 w-4 text-green-400" />}
                 </div>
-                <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300">{res.score}%</p>
+                <p className="text-xl font-bold text-indigo-300">{res.score}%</p>
                 <p className="text-[10px] mt-1 opacity-60">{res.teacher.specialization}</p>
               </div>
             ))}
@@ -659,7 +659,7 @@ function MatchAnalysisPanel({ matchedTeacher, allTeacherScores, showResults }: {
                 <div><span className="text-indigo-200/80">Strength:</span> <span className="font-semibold">{d.teacherStrength}/10</span></div>
               </div>
               <div className="h-1.5 rounded bg-white/10 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-500" style={{ width: `${Math.min(100, d.matchScore)}%` }} />
+                <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, d.matchScore)}%` }} />
               </div>
             </div>
           ))}

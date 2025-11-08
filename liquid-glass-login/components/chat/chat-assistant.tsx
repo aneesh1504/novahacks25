@@ -149,21 +149,17 @@ export function ChatAssistant() {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        className="fixed right-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-l-full rounded-r-none bg-[#0C115B] text-white shadow-2xl hover:bg-[#0C115B]/90 md:flex"
-      >
-        <MessageCircle className="mr-2 h-4 w-4" />
-        AI Assistant
-      </Button>
-
-      <Button
-        size="icon"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 rounded-full bg-[#0C115B] text-white shadow-xl md:hidden"
-      >
-        <MessageCircle className="h-4 w-4" />
-      </Button>
+      {/* Show the launcher only when profiles are present and indexed context is available */}
+      {hasProfiles && (
+        <Button
+          aria-label="Open AI assistant"
+          size="icon"
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 z-40 rounded-full bg-indigo-800 text-white shadow-xl hover:bg-indigo-700"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
+      )}
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
