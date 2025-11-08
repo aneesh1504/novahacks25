@@ -23,7 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
-      <body className="font-sans">{children}</body>
+      {/* Suppress hydration warnings to avoid noise from browser extensions (e.g., Grammarly) mutating the DOM */}
+      <body className="font-sans" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   )
 }
