@@ -1,5 +1,13 @@
 import { apiClient } from './client'
-import type { MatchRequest, MatchResponse, StudentProfile, TeacherProfile } from './types'
+import type {
+  ChatIndexResponse,
+  ChatMessagePayload,
+  ChatQueryResponse,
+  MatchRequest,
+  MatchResponse,
+  StudentProfile,
+  TeacherProfile,
+} from './types'
 
 // Backend routes served by FastAPI
 export const endpoints = {
@@ -7,6 +15,8 @@ export const endpoints = {
   teachersProcess: '/api/teachers/process',
   studentsProcess: '/api/students/process',
   match: '/api/match',
+  chatIndex: '/api/chat/index',
+  chatQuery: '/api/chat/query',
 }
 
 export const api = {
@@ -22,4 +32,8 @@ export const api = {
     fd.append('file', file)
     return apiClient.post<StudentProfile[], FormData>(endpoints.studentsProcess, fd)
   },
+  chatIndex: (payload: { teachers: unknown[]; students: unknown[] }) =>
+    apiClient.post<ChatIndexResponse, typeof payload>(endpoints.chatIndex, payload),
+  chatQuery: (payload: { question: string; history?: ChatMessagePayload[] }) =>
+    apiClient.post<ChatQueryResponse, typeof payload>(endpoints.chatQuery, payload),
 }

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any
 import io
@@ -11,6 +11,7 @@ load_dotenv()
 from teacherRadar import process_teacher_data, extract_teacher_name, extract_document_text
 from studentRadar import process_student_data
 from matchingAlgo import run_matching_algorithm
+from chatAssistant import index_profiles, retrieve_context, generate_response
 
 
 app = FastAPI(title="Education Matching API", version="0.1.0")
@@ -66,6 +67,29 @@ async def match(payload: Dict[str, Any]) -> Dict[str, List[str]]:
     constraints = payload.get("constraints", {})
     matches = run_matching_algorithm(teachers, students, constraints)
     return matches
+
+
+@app.post("/api/chat/index")
+async def chat_index(payload: Dict[str, Any]) -> Dict[str, Any]:
+    teachers = payload.get("teachers") or []
+    students = payload.get("students") or []
+    if not teachers and not students:
+        raise HTTPException(status_code=400, detail="Provide at least one teacher or student profile to index.")
+
+    counts = index_profiles(teachers, students)
+    return {"ok": True, **counts}
+
+
+@app.post("/api/chat/query")
+async def chat_query(payload: Dict[str, Any]) -> Dict[str, Any]:
+    question = (payload.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question text is required.")
+
+    history = payload.get("history") or []
+    docs = retrieve_context(question, top_k=6)
+    answer = generate_response(question, docs, history)
+    return {"answer": answer, "contextUsed": len(docs)}
 
 
 # Convenience: run with `uvicorn api_server:app --reload --port 8000`

@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { ChatAssistant } from "@/components/chat/chat-assistant"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({
       {/* Suppress hydration warnings to avoid noise from browser extensions (e.g., Grammarly) mutating the DOM */}
       <body className="font-sans" suppressHydrationWarning>
         {children}
+        <ChatAssistant />
       </body>
     </html>
   )

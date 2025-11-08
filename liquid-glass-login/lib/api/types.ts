@@ -56,6 +56,22 @@ export interface MatchResponse {
   meta?: Record<string, unknown>;
 }
 
+export interface ChatMessagePayload {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatIndexResponse {
+  ok: boolean;
+  teachers: number;
+  students: number;
+}
+
+export interface ChatQueryResponse {
+  answer: string;
+  contextUsed: number;
+}
+
 export interface ApiError {
   status: number;
   message: string;
