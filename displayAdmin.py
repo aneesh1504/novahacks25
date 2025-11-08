@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from teacherRadar import process_teacher_data
+from teacherRadar import process_teacher_data, extract_teacher_name, extract_document_text
 from studentRadar import process_student_data
 from matchingAlgo import run_matching_algorithm
 from makeRadar import create_teacher_radar, create_student_radar
@@ -14,10 +14,15 @@ def process_all_teachers(teacher_files):
     """Process all uploaded teacher files into radar-compatible JSON."""
     teachers = []
     for idx, file in enumerate(teacher_files):
-        teacher_id = f"Teacher_{idx+1}"
-        result = process_teacher_data(file, teacher_id)
+        # Extract the text to parse name
+        text_preview = extract_document_text(file)
+        teacher_name = extract_teacher_name(text_preview, f"Teacher_{idx+1}")
+
+        # Use actual teacher name in place of generic ID
+        result = process_teacher_data(file, teacher_name)
         teachers.append(result)
     return teachers
+
 
 def process_all_students(student_file):
     """Process uploaded student CSV into radar-compatible JSON."""

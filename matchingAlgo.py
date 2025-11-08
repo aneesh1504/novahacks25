@@ -11,24 +11,7 @@ def run_matching_algorithm(
     student_profiles: List[Dict[str, Any]],
     constraints: Dict[str, Any]
 ) -> Dict[str, List[str]]:
-    """
-    Run optimization algorithm to match teachers and students
-    based on their vector profiles.
-
-    Parameters
-    ----------
-    teacher_profiles : list of dict
-        Each teacher's numeric profile from teacherRadar.py
-    student_profiles : list of dict
-        Each student's numeric profile from studentRadar.py
-    constraints : dict
-        Optional settings such as max/min class size
-
-    Returns
-    -------
-    dict
-        Mapping {teacher_id: [student_id, ...]}
-    """
+    """Run optimization algorithm to match teachers and students."""
     if not teacher_profiles or not student_profiles:
         print("[WARN] Empty teacher or student list. Returning empty match set.")
         return {}
@@ -53,41 +36,55 @@ def calculate_compatibility_matrix(
     """
     matrix = np.zeros((len(students), len(teachers)))
 
+    # Optional per-field weights (importance)
+    weights = {
+        "subject_expertise": 1.2,
+        "patience_level": 1.0,
+        "innovation": 0.8,
+        "structure": 0.8,
+        "communication": 1.0,
+        "special_needs_support": 1.5,
+        "student_engagement": 1.0,
+        "classroom_management": 1.0
+    }
+
     for i, student in enumerate(students):
         for j, teacher in enumerate(teachers):
-            compatibility = 0.0
+            score_sum, weight_sum = 0.0, 0.0
 
-            # Subject expertise vs support needed (inverse relationship)
-            compatibility += (teacher["subject_expertise"] * (10 - student["subject_support_needed"])) / 10
+            # Direct relationships (higher teacher + higher student need = better)
+            for field, weight in weights.items():
+                student_key = _map_student_field(field)
+                if student_key not in student:
+                    continue  # skip missing fields
 
-            # Patience alignment
-            compatibility += (teacher["patience_level"] * student["patience_needed"]) / 10
+                t_val = float(teacher.get(field, 0))
+                s_val = float(student.get(student_key, 0))
 
-            # Innovation match
-            compatibility += (teacher["innovation"] * student["innovation_needed"]) / 10
+                # Normalized product
+                pair_score = (t_val * s_val) / 10.0
+                score_sum += pair_score * weight
+                weight_sum += weight
 
-            # Structure match
-            compatibility += (teacher["structure"] * student["structure_needed"]) / 10
-
-            # Communication match
-            compatibility += (teacher["communication"] * student["communication_needed"]) / 10
-
-            # Special needs support (weighted higher)
-            if student["special_needs_support"] > 5:
-                compatibility += (teacher["special_needs_support"] * 2) / 10
-            else:
-                compatibility += (teacher["special_needs_support"] * student["special_needs_support"]) / 10
-
-            # Engagement needs
-            compatibility += (teacher["student_engagement"] * student["engagement_needed"]) / 10
-
-            # Classroom management
-            compatibility += (teacher["classroom_management"] * student["behavior_support_needed"]) / 10
-
-            # Normalize across factors
-            matrix[i, j] = compatibility / 8.0
+            # Normalize score per teacher-student pair
+            matrix[i, j] = score_sum / max(weight_sum, 1e-6)
 
     return matrix
+
+
+def _map_student_field(teacher_field: str) -> str:
+    """Map teacher fields to their corresponding student need fields."""
+    mapping = {
+        "subject_expertise": "subject_support_needed",
+        "patience_level": "patience_needed",
+        "innovation": "innovation_needed",
+        "structure": "structure_needed",
+        "communication": "communication_needed",
+        "special_needs_support": "special_needs_support",
+        "student_engagement": "engagement_needed",
+        "classroom_management": "behavior_support_needed"
+    }
+    return mapping.get(teacher_field, teacher_field)
 
 
 # ============================================================
@@ -103,7 +100,7 @@ def assign_students(
     Use Hungarian algorithm to assign students to teachers for max compatibility.
     """
     num_students, num_teachers = matrix.shape
-    student_indices, teacher_indices = linear_sum_assignment(-matrix)  # maximize
+    student_indices, teacher_indices = linear_sum_assignment(-matrix)  # maximize compatibility
 
     assignments: Dict[str, List[str]] = {}
     for s_idx, t_idx in zip(student_indices, teacher_indices):
@@ -111,16 +108,14 @@ def assign_students(
         s_id = students[s_idx]["student_id"]
         assignments.setdefault(t_id, []).append(s_id)
 
-    # Handle unassigned students (if teacher count < student count)
+    # Handle leftover students (if more students than teachers)
     assigned_students = {s for lst in assignments.values() for s in lst}
     unassigned_students = [s for s in students if s["student_id"] not in assigned_students]
-
     if unassigned_students:
-        print(f"[INFO] {len(unassigned_students)} unassigned students, distributing randomly.")
-        teacher_ids = [t["teacher_id"] for t in teachers]
+        teacher_ids = list(assignments.keys())
         for i, student in enumerate(unassigned_students):
-            assigned_teacher = teacher_ids[i % len(teacher_ids)]
-            assignments[assigned_teacher].append(student["student_id"])
+            target = teacher_ids[i % len(teacher_ids)]
+            assignments[target].append(student["student_id"])
 
     return assignments
 
@@ -130,18 +125,14 @@ def assign_students(
 # ============================================================
 
 def balance_class_sizes(assignments: Dict[str, List[str]], constraints: Dict[str, Any]) -> Dict[str, List[str]]:
-    """
-    Enforce min/max class sizes by rebalancing students across teachers.
-    Keeps random fairness while preserving overall match coverage.
-    """
+    """Ensure each class stays within min/max constraints."""
     max_size = constraints.get("max_class_size", 25)
     min_size = constraints.get("min_class_size", 10)
 
-    all_students = [s for sub in assignments.values() for s in sub]
+    all_students = [s for subs in assignments.values() for s in subs]
     teacher_ids = list(assignments.keys())
     avg_size = len(all_students) // max(1, len(teacher_ids))
 
-    # redistribute to avoid overflows
     new_assignments = {tid: [] for tid in teacher_ids}
     idx = 0
     for tid in teacher_ids:
@@ -149,48 +140,46 @@ def balance_class_sizes(assignments: Dict[str, List[str]], constraints: Dict[str
         new_assignments[tid] = all_students[idx:idx+size]
         idx += size
 
-    # catch any leftovers
+    # Add leftovers if any
     if idx < len(all_students):
         leftover = all_students[idx:]
         for i, sid in enumerate(leftover):
-            target_teacher = teacher_ids[i % len(teacher_ids)]
-            new_assignments[target_teacher].append(sid)
+            new_assignments[teacher_ids[i % len(teacher_ids)]].append(sid)
 
-    # remove empty teachers if necessary
-    new_assignments = {k: v for k, v in new_assignments.items() if v}
-
-    return new_assignments
+    # Remove empty teacher slots
+    return {k: v for k, v in new_assignments.items() if v}
 
 
 # ============================================================
-# EXAMPLE LOCAL TEST
+# LOCAL TEST
 # ============================================================
 
 def json_pretty(obj: Any) -> str:
     import json
     return json.dumps(obj, indent=2)
 
+
 if __name__ == "__main__":
     teachers = [
-        {"teacher_id": "T1", "subject_expertise": 8, "patience_level": 7, "innovation": 6,
-         "structure": 8, "communication": 7, "special_needs_support": 6,
-         "student_engagement": 7, "classroom_management": 8},
-        {"teacher_id": "T2", "subject_expertise": 7, "patience_level": 9, "innovation": 8,
-         "structure": 6, "communication": 9, "special_needs_support": 7,
-         "student_engagement": 6, "classroom_management": 7}
+        {"teacher_id": "Mr. David Chen", "subject_expertise": 10, "patience_level": 2,
+         "innovation": 7, "structure": 9, "communication": 6, "special_needs_support": 1,
+         "student_engagement": 5, "classroom_management": 8},
+        {"teacher_id": "Ms. Amanda Tan", "subject_expertise": 9, "patience_level": 10,
+         "innovation": 6, "structure": 9, "communication": 8, "special_needs_support": 10,
+         "student_engagement": 7, "classroom_management": 8}
     ]
 
     students = [
-        {"student_id": "S1", "subject_support_needed": 5, "patience_needed": 8,
-         "innovation_needed": 6, "structure_needed": 7, "communication_needed": 8,
+        {"student_id": "Emily", "subject_support_needed": 9, "patience_needed": 8,
+         "innovation_needed": 5, "structure_needed": 6, "communication_needed": 6,
          "special_needs_support": 2, "engagement_needed": 7, "behavior_support_needed": 4},
-        {"student_id": "S2", "subject_support_needed": 3, "patience_needed": 6,
-         "innovation_needed": 7, "structure_needed": 8, "communication_needed": 6,
-         "special_needs_support": 4, "engagement_needed": 5, "behavior_support_needed": 3},
-        {"student_id": "S3", "subject_support_needed": 8, "patience_needed": 9,
-         "innovation_needed": 6, "structure_needed": 6, "communication_needed": 8,
-         "special_needs_support": 7, "engagement_needed": 8, "behavior_support_needed": 6}
+        {"student_id": "Marcus", "subject_support_needed": 3, "patience_needed": 10,
+         "innovation_needed": 7, "structure_needed": 8, "communication_needed": 9,
+         "special_needs_support": 8, "engagement_needed": 5, "behavior_support_needed": 3},
+        {"student_id": "Aisha", "subject_support_needed": 8, "patience_needed": 9,
+         "innovation_needed": 6, "structure_needed": 5, "communication_needed": 7,
+         "special_needs_support": 10, "engagement_needed": 8, "behavior_support_needed": 6}
     ]
 
     matches = run_matching_algorithm(teachers, students, {"max_class_size": 2, "min_class_size": 1})
-    print("\nFinal matches:\n", json_pretty(matches := matches))
+    print("\nFinal matches:\n", json_pretty(matches))

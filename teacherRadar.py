@@ -131,6 +131,18 @@ def _mock_fallback() -> str:
 # TEACHER PROFILE PROCESSOR
 # ============================================================
 
+def extract_teacher_name(text: str, default_name: str) -> str:
+    """
+    Extract teacher name from text using a pattern like 'Mr. John Smith' or 'Ms. Jane Tan'.
+    Falls back to default_name if not found.
+    """
+    # Regex pattern for titles and names like "Mr. David Chen", "Ms. Sarah Tan", "Dr. Alex Wong"
+    match = re.search(r"\b(Mr|Ms|Mrs|Dr)\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+", text)
+    if match:
+        return match.group(0).strip()
+    return default_name
+
+
 def process_teacher_data(teacher_document: Any, teacher_id: str) -> Dict[str, Any]:
     """
     Process a teacher document (PDF/TXT) and produce a standardized JSON vector.

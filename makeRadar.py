@@ -8,7 +8,7 @@ from typing import Dict
 
 def create_student_radar(student_data: Dict) -> go.Figure:
     """
-    Create a student radar chart (spikes outward from center).
+    Create a student radar chart (values radiate outward from center).
     Expects student_data dict with 1–10 values for each dimension.
     """
     categories = [
@@ -22,7 +22,6 @@ def create_student_radar(student_data: Dict) -> go.Figure:
         "Behavior Support Needed"
     ]
 
-    # Safely extract values with defaults
     values = [
         float(student_data.get("subject_support_needed", 0)),
         float(student_data.get("patience_needed", 0)),
@@ -40,16 +39,17 @@ def create_student_radar(student_data: Dict) -> go.Figure:
         theta=categories,
         fill="toself",
         name=student_data.get("student_id", "Student"),
-        line=dict(color="red"),
-        fillcolor="rgba(255,0,0,0.3)"
+        line=dict(color="red", width=3),
+        fillcolor="rgba(255,0,0,0.25)"
     ))
 
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 10]),
+            radialaxis=dict(visible=True, range=[0, 10], tickvals=[0,2,4,6,8,10]),
         ),
         showlegend=True,
-        title=f"🎯 Student Needs Profile: {student_data.get('student_id', '')}"
+        title=f"🎯 Student Needs Profile: {student_data.get('student_id', '')}",
+        margin=dict(l=40, r=40, t=80, b=40)
     )
     return fig
 
@@ -60,7 +60,7 @@ def create_student_radar(student_data: Dict) -> go.Figure:
 
 def create_teacher_radar(teacher_data: Dict) -> go.Figure:
     """
-    Create a teacher radar chart (stems inward from circumference).
+    Create a teacher radar chart (same outward orientation as student radar).
     Expects teacher_data dict with 1–10 values for each capability dimension.
     """
     categories = [
@@ -74,8 +74,7 @@ def create_teacher_radar(teacher_data: Dict) -> go.Figure:
         "Classroom Management"
     ]
 
-    # Invert to create "inward" visual (higher skill = closer to center)
-    raw_values = [
+    values = [
         float(teacher_data.get("subject_expertise", 0)),
         float(teacher_data.get("patience_level", 0)),
         float(teacher_data.get("innovation", 0)),
@@ -85,23 +84,23 @@ def create_teacher_radar(teacher_data: Dict) -> go.Figure:
         float(teacher_data.get("student_engagement", 0)),
         float(teacher_data.get("classroom_management", 0))
     ]
-    inverted_values = [10 - v for v in raw_values]
 
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
-        r=inverted_values,
+        r=values,
         theta=categories,
         fill="toself",
         name=teacher_data.get("teacher_id", "Teacher"),
-        line=dict(color="blue"),
-        fillcolor="rgba(0,0,255,0.3)"
+        line=dict(color="blue", width=3),
+        fillcolor="rgba(0,0,255,0.25)"
     ))
 
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 10]),
+            radialaxis=dict(visible=True, range=[0, 10], tickvals=[0,2,4,6,8,10]),
         ),
         showlegend=True,
-        title=f"🧑‍🏫 Teacher Capability Profile: {teacher_data.get('teacher_id', '')}"
+        title=f"🧑‍🏫 Teacher Capability Profile: {teacher_data.get('teacher_id', '')}",
+        margin=dict(l=40, r=40, t=80, b=40)
     )
     return fig
