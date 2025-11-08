@@ -5,6 +5,7 @@ from studentRadar import process_student_data
 from matchingAlgo import run_matching_algorithm
 from makeRadar import create_teacher_radar, create_student_radar
 from makeCombinedRadar import create_combined_radar
+from chatAssistant import render_chat_interface
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -32,11 +33,11 @@ def process_all_students(student_file):
 
 def main():
     st.set_page_config(page_title="Education Matching System", layout="wide")
-    st.title("🎓 Teacher–Student Matching System")
+    st.title("Teacher–Student Matching System")
 
     # Sidebar controls
     with st.sidebar:
-        st.header("📁 Upload Data")
+        st.header("Upload Data")
 
         teacher_files = st.file_uploader(
             "Upload Teacher Profiles (PDF/TXT)",
@@ -48,7 +49,7 @@ def main():
         max_class_size = st.number_input("Max Class Size", value=25, min_value=1)
         min_class_size = st.number_input("Min Class Size", value=10, min_value=1)
 
-        if st.button("🚀 Process Data"):
+        if st.button("Process Data"):
             if not teacher_files or not student_file:
                 st.error("Please upload both teacher and student data first.")
             else:
@@ -60,7 +61,7 @@ def main():
                     student_data = process_all_students(student_file)
                     st.session_state.student_data = student_data
 
-                st.success("✅ Data processed successfully!")
+                st.success("Data processed successfully!")
 
     # ============================================================
     # TEACHER AND STUDENT RADARS
@@ -71,7 +72,7 @@ def main():
 
         # ----- TEACHERS -----
         with col1:
-            st.header("👨‍🏫 Teacher Profiles")
+            st.header("Teacher Profiles")
             teacher_names = [t["teacher_id"] for t in st.session_state.teacher_data]
             selected_teacher = st.selectbox("Select a Teacher", teacher_names)
 
@@ -80,7 +81,7 @@ def main():
                     t for t in st.session_state.teacher_data if t["teacher_id"] == selected_teacher
                 )
                 st.plotly_chart(create_teacher_radar(teacher_info), use_container_width=True)
-                with st.expander("📝 Teacher Summary"):
+                with st.expander("Teacher Summary"):
                     st.markdown(
                         f"**Strengths:** {', '.join(teacher_info.get('raw_strengths', [])) or 'N/A'}"
                     )
@@ -90,7 +91,7 @@ def main():
 
         # ----- STUDENTS -----
         with col2:
-            st.header("👩‍🎓 Student Profiles")
+            st.header("Student Profiles")
             student_names = [s["student_id"] for s in st.session_state.student_data]
             selected_student = st.selectbox("Select a Student", student_names)
 
@@ -110,7 +111,7 @@ def main():
     if (
         "teacher_data" in st.session_state
         and "student_data" in st.session_state
-        and st.button("🧩 Generate Optimal Matches", type="primary")
+        and st.button("Generate Optimal Matches", type="primary")
     ):
         with st.spinner("Running optimization..."):
             matches = run_matching_algorithm(
@@ -119,7 +120,7 @@ def main():
                 {"max_class_size": max_class_size, "min_class_size": min_class_size},
             )
             st.session_state.matches = matches
-            st.success("✅ Matches generated successfully!")
+            st.success("Matches generated successfully!")
 
     # ============================================================
     # DISPLAY MATCH RESULTS
@@ -127,19 +128,19 @@ def main():
 
     if "matches" in st.session_state:
         st.divider()
-        st.header("📊 Optimal Teacher–Student Matches")
+        st.header("Optimal Teacher–Student Matches")
 
         for teacher_id, student_list in st.session_state.matches.items():
             teacher_info = next(
                 t for t in st.session_state.teacher_data if t["teacher_id"] == teacher_id
             )
-            with st.expander(f"🧑‍🏫 {teacher_id} — {len(student_list)} students"):
+            with st.expander(f"{teacher_id} — {len(student_list)} students"):
                 for student_id in student_list:
                     student_info = next(
                         s for s in st.session_state.student_data if s["student_id"] == student_id
                     )
 
-                    st.subheader(f"🎯 Match: {student_id}")
+                    st.subheader(f"Match: {student_id}")
                     fig = create_combined_radar(teacher_info, student_info)
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -155,3 +156,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    render_chat_interface()
