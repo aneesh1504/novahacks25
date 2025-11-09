@@ -1,0 +1,338 @@
+:root {
+  font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0d0d12;
+  background-color: #f3f0ff;
+  line-height: 1.5;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, #f7ecff, #e9f0ff 45%, #dde1ff 80%);
+  color: inherit;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem 4rem;
+  overflow: hidden;
+}
+
+.bg-aurora {
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  filter: blur(120px);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aurora-one {
+  top: 10%;
+  left: 5%;
+  background: radial-gradient(circle, rgba(173, 132, 255, 0.9), rgba(255, 255, 255, 0));
+}
+
+.aurora-two {
+  bottom: -5%;
+  right: -5%;
+  background: radial-gradient(circle, rgba(117, 160, 255, 0.8), rgba(255, 255, 255, 0));
+}
+
+.grain {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"%3E%3Cdefs%3E%3Cfilter id="n" x="0" y="0" width="1" height="1"%3E%3CfeTurbulence baseFrequency="0.8" numOctaves="2" seed="3"/%3E%3C/filter%3E%3C/defs%3E%3Crect width="160" height="160" fill="rgba(255,255,255,0)"/%3E%3Crect width="160" height="160" filter="url(%23n)" opacity="0.07"/%3E%3C/svg%3E');
+  opacity: 0.75;
+  mix-blend-mode: soft-light;
+  z-index: 1;
+}
+
+.glass-panel {
+  position: relative;
+  z-index: 2;
+  width: min(1100px, 95vw);
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 30px 80px rgba(88, 70, 140, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(35px);
+  padding: 3rem clamp(1.5rem, 4vw, 4rem) 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.hero {
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(2.3rem, 4vw, 3.3rem);
+  font-weight: 600;
+}
+
+.hero .lede {
+  max-width: 640px;
+  margin: 0 auto;
+  color: rgba(13, 13, 18, 0.68);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  color: rgba(13, 13, 18, 0.55);
+  margin: 0;
+}
+
+.blob-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.blob-surface {
+  width: min(560px, 90vw);
+  aspect-ratio: 5 / 3;
+  border-radius: 40px;
+  background: linear-gradient(135deg, rgba(235, 223, 255, 0.7), rgba(207, 226, 255, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+}
+
+.blob-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.status-chip {
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(14, 10, 40, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.microcopy {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(13, 13, 18, 0.6);
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  font-size: 1rem;
+  padding: 0.95rem 2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-weight: 600;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.primary {
+  background: linear-gradient(120deg, #6f6bff, #c47bff);
+  color: #fff;
+  box-shadow: 0 15px 30px rgba(119, 110, 255, 0.35);
+}
+
+.primary:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.ghost {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(118, 118, 255, 0.3);
+  color: rgba(13, 13, 18, 0.8);
+}
+
+.question-card {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 1.75rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.question-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: rgba(13, 13, 18, 0.55);
+}
+
+.question-count {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+
+.question-card h2 {
+  margin: 1rem 0 0.5rem;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 600;
+}
+
+.helper-text {
+  margin: 0;
+  color: rgba(13, 13, 18, 0.62);
+}
+
+.progress {
+  flex: 1;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(10, 10, 20, 0.08);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(120deg, #a977ff, #5f6fff);
+  transition: width 0.25s ease;
+}
+
+.transcript-panel {
+  background: rgba(255, 255, 255, 0.68);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3 {
+  margin: 0.15rem 0 0;
+}
+
+.chip {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  background: rgba(111, 107, 255, 0.12);
+  border: 1px solid rgba(111, 107, 255, 0.3);
+}
+
+.transcript-list {
+  max-height: 280px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transcript-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(242, 240, 255, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.bubble {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(140deg, #a577ff, #7b9bff);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.question {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.answer {
+  margin: 0;
+  color: rgba(13, 13, 18, 0.7);
+}
+
+.empty-state {
+  margin: 1rem 0 0;
+  text-align: center;
+  color: rgba(13, 13, 18, 0.55);
+}
+
+@media (max-width: 900px) {
+  .glass-panel {
+    padding: 2.5rem 1.5rem 3rem;
+    border-radius: 24px;
+  }
+
+  .blob-surface {
+    border-radius: 28px;
+  }
+
+  .question-card,
+  .transcript-panel {
+    border-radius: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .controls {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .transcript-list {
+    max-height: 220px;
+  }
+}

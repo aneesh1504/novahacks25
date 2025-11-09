@@ -23,7 +23,12 @@ except ImportError:
     VoiceSettings = None
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC_DIR = ROOT
+DIST_DIR = ROOT / "dist"
+if not DIST_DIR.exists():
+    raise RuntimeError(
+        "Front-end build not found. Run `npm install` and `npm run build` inside the interview directory."
+    )
+STATIC_DIR = DIST_DIR
 DEFAULT_MODEL_PATH = os.environ.get("VOSK_MODEL", str(ROOT / "models" / "vosk-model-small-en-us-0.15"))
 SAMPLE_RATE = 16000
 
