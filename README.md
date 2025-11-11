@@ -1,5 +1,28 @@
-NovaHacks 25 — Teacher–Student Matching Platform
+NovaHacks 25 — Monorepo
 
+This repository contains two independent, runnable projects:
+- Teacher–Student Matching Platform (Next.js + FastAPI)
+- Voice Interviewer (Browser app with Flask server for STT/TTS)
+
+Use the sections below to set up and run either app locally.
+
+Table of contents
+- Teacher–Student Matching Platform
+    - Overview and key tech
+    - Radar model and matching algorithms
+    - App flow and repository layout
+    - Quick start and detailed setup
+    - Troubleshooting and roadmap
+- Voice Interviewer
+    - Features and overview
+    - Run locally (Vosk STT + XTTS neural TTS)
+    - Files, browser support, and notes
+- Port usage and conflicts
+- License
+
+Teacher–Student Matching Platform
+
+Overview
 An end-to-end system that pairs students with teachers based on complementary learning needs and teacher strengths—not just by subject. The app extracts profiles, scores them along multiple dimensions, computes optimal assignments, and visualizes every pair with clear radar overlays.
 
 Key tech
@@ -7,7 +30,7 @@ Key tech
 - Backend: FastAPI (Uvicorn), Python, NumPy/Pandas, SciPy
 - Matching: Hungarian algorithm (optimal assignment) + cosine similarity for vector alignment
 
-What “radar” means here
+Radar model (what “radar” means here)
 - Each profile is an 8‑dimension vector on a 0–10 scale.
     - Student needs: Subject Support, Patience Needed, Innovation Needed, Structure Needed, Communication Needed, Special Needs Support, Engagement Needed, Behavior Support Needed
     - Teacher strengths: Subject Expertise, Patience, Innovation, Structure, Communication, Special Needs Support, Student Engagement, Classroom Management
@@ -50,24 +73,24 @@ Repository layout (high‑level)
     - lib/api/ — API client endpoints
     - lib/state/ — local session storage and pending file handoff
 
-Quick start (keep these exact commands)
+Quick start (Teacher–Student Matching)
 
-Backend run (run using venv):
-```
-python -m pip install --upgrade pip      
-python -m pip install -r requirements.txt            
+Backend run (use a venv):
+```zsh
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 python -m uvicorn api_server:app --reload --port 8000
 ```
 
 Frontend:
-```
+```zsh
 cd liquid-glass-login
 npm install
 npm run dev
 ```
 
 Create env file in liquid-glass-login/.env.local:
-```
+```bash
 # Copy to .env.local and adjust values for your environment
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_USE_BACKEND=true
@@ -76,7 +99,7 @@ NEXT_PUBLIC_USE_BACKEND=true
 Detailed setup
 1) Backend (Python/FastAPI)
      - Recommended: create a virtualenv and install dependencies
-         ```
+         ```zsh
          python3 -m venv .venv
          source .venv/bin/activate
          python -m pip install --upgrade pip
@@ -87,7 +110,7 @@ Detailed setup
 
 2) Frontend (Next.js)
      - From liquid-glass-login, install and run dev server
-         ```
+         ```zsh
          npm install
          npm run dev
          ```
@@ -117,6 +140,77 @@ Roadmap (ideas)
 - Multi-origin CORS presets for team testing
 - Exportable match reports (CSV/PDF)
 - Optional authentication and persistent profiles
+
+Voice Interviewer
+
+Features
+- Asks a predefined set of interview questions using XTTS neural text-to-speech
+- Records your answers using the laptop microphone
+- Visualizes live audio as a waveform
+- Transcribes responses using Vosk speech-to-text
+- Exports transcripts with recognized text
+
+Overview
+- No backend required for the basic UI; runs in the browser
+- For speech-to-text and neural TTS, a Flask server provides Vosk STT and XTTS TTS endpoints
+
+Run locally (with Vosk speech-to-text and XTTS neural voice)
+1) Download a Vosk English model (small):
+     - https://alphacephei.com/vosk/models (e.g., `vosk-model-small-en-us-0.15`)
+     - Unzip into `novahacks25/models/vosk-model-small-en-us-0.15`
+
+2) Install Python deps and start the server:
+```zsh
+cd server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+# Note: First run will download XTTS model (~2GB)
+# Optional if you used a different model path
+# export VOSK_MODEL="/absolute/path/to/model"
+python app.py
+```
+
+This serves the web app at http://localhost:5173 and exposes:
+- POST /transcribe for STT
+- POST /tts for neural voice generation
+
+3) Open the app and use it:
+- Visit http://localhost:5173
+- Select "XTTS (Neural Voice)" from the dropdown for high-quality AI voice, or browser TTS as fallback
+- Ensure "Enable voice questions" is checked (default: on)
+- Click "Start Interview" and allow microphone access
+- Listen as the interviewer speaks each question with natural neural voice
+- Answer the question (your voice will be recorded and transcribed)
+- Use "Replay Question" anytime during recording to hear it again
+- After each answer, the app uploads a 16kHz mono WAV to the server for transcription
+- Use "Export Transcript (With STT)" to download a text file of recognized answers
+
+Files (Voice Interviewer)
+- index.html – App shell and layout
+- src/style.css – Minimal white theme styles
+- src/app.js – Interview flow, XTTS + browser TTS, waveform, recording, and export logic
+- src/recorder-worklet.js – AudioWorklet processor to capture raw PCM for STT
+- interview.md – Original prompt and questions
+- ARCHITECTURE.md – System architecture and design notes
+- server/app.py – Flask server with Vosk transcription + XTTS neural voice endpoints
+- server/requirements.txt – Python dependencies for the server
+- models/ – Place the downloaded Vosk model here (see step 1)
+
+Browser support
+- Modern Chromium/Firefox/Safari with getUserMedia, AudioContext, and MediaRecorder
+- AudioWorklet is recommended for STT capture; if not supported, STT will be disabled
+- Neural TTS requires server backend; browser TTS fallback uses speechSynthesis API
+
+Notes
+- Audio is recorded locally; when STT is enabled, a 16kHz WAV is sent to your local Flask server for offline transcription using Vosk
+- Neural voice questions are generated server-side using XTTS and streamed to the browser. Browser TTS is available as fallback
+- Transcript export includes question content and recognized text (when available); recorded audio remains playable in-page
+
+Port usage and conflicts
+- Teacher–Student Matching: FastAPI on 8000, Next.js on 3000
+- Voice Interviewer: Flask server and static web on 5173
+- If a port is busy, change it in the respective dev server command or config, then update any client URL references accordingly
 
 License
 TBD
