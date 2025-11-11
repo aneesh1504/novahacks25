@@ -1,0 +1,10 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pandas>=2.0.0
+numpy>=1.25.0
+scipy>=1.10.0
+PyPDF2>=3.0.0
+requests>=2.31.0
+python-dotenv>=1.0.1
+python-multipart>=0.0.9
+chromadb>=0.5.3
