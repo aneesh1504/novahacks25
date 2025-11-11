@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Interviewer</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <main>
+    <h1>Voice Interviewer</h1>
+    <section id="status" aria-live="polite"></section>
+    <canvas id="waveform" width="800" height="200" aria-label="Audio waveform visualization"></canvas>
+    <div id="controls">
+      <button id="recordBtn">Start Interview</button>
+      <button id="exportTranscriptBtn" disabled>Export Transcript (txt)</button>
+    </div>
+    <section id="currentQuestion" aria-live="polite"></section>
+    <section id="transcript" aria-live="polite"></section>
+    <noscript>This application requires JavaScript to function.</noscript>
+  </main>
+  <script type="module" src="./src/app_simple.js"></script>
+</body>
+</html>
